@@ -440,6 +440,19 @@ config HW_RANDOM_OPTEE
 
 	  If unsure, say Y.
 
+config HW_RANDOM_ASPEED
+	tristate "Aspeed Hardware Random Number Generator support"
+	depends on ARCH_ASPEED || COMPILE_TEST
+	default HW_RANDOM
+	help
+	  If you say yes to this option, support will be included for the
+	  Hardware Random Number Generator that comes with Aspeed SoCs.
+
+	  This driver can also be built as a module.  If so, the module
+	  will be called aspeed-rng.
+
+	  If unsure, say Y.
+
 endif # HW_RANDOM
 
 config UML_RANDOM
