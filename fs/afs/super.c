@@ -236,6 +236,9 @@ static int afs_parse_source(struct fs_context *fc, struct fs_parameter *param)
 
 	_enter(",%s", name);
 
+	if (fc->source)
+		return invalf(fc, "kAFS: Multiple sources not supported");
+
 	if (!name) {
 		printk(KERN_ERR "kAFS: no volume name specified\n");
 		return -EINVAL;
@@ -404,6 +407,7 @@ static int afs_test_super(struct super_block *sb, struct fs_context *fc)
 	return (as->net_ns == fc->net_ns &&
 		as->volume &&
 		as->volume->vid == ctx->volume->vid &&
+		as->cell == ctx->cell &&
 		!as->dyn_root);
 }
 

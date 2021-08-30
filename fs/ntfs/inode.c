@@ -628,6 +628,12 @@ static int ntfs_read_locked_inode(struct inode *vi)
 	}
 	a = ctx->attr;
 	/* Get the standard information attribute value. */
+	if ((u8 *)a + le16_to_cpu(a->data.resident.value_offset)
+			+ le32_to_cpu(a->data.resident.value_length) >
+			(u8 *)ctx->mrec + vol->mft_record_size) {
+		ntfs_error(vi->i_sb, "Corrupt standard information attribute in inode.");
+		goto unm_err_out;
+	}
 	si = (STANDARD_INFORMATION*)((u8*)a +
 			le16_to_cpu(a->data.resident.value_offset));
 
@@ -1809,6 +1815,12 @@ int ntfs_read_inode_mount(struct inode *vi)
 		brelse(bh);
 	}
 
+	if (le32_to_cpu(m->bytes_allocated) != vol->mft_record_size) {
+		ntfs_error(sb, "Incorrect mft record size %u in superblock, should be %u.",
+				le32_to_cpu(m->bytes_allocated), vol->mft_record_size);
+		goto err_out;
+	}
+
 	/* Apply the mst fixups. */
 	if (post_read_mst_fixup((NTFS_RECORD*)m, vol->mft_record_size)) {
 		/* FIXME: Try to use the $MFTMirr now. */
@@ -2899,18 +2911,12 @@ int ntfs_setattr(struct dentry *dentry, struct iattr *attr)
 			ia_valid |= ATTR_MTIME | ATTR_CTIME;
 		}
 	}
-	if (ia_valid & ATTR_ATIME) {
-		vi->i_atime = timestamp_truncate(attr->ia_atime,
-					       vi);
-	}
-	if (ia_valid & ATTR_MTIME) {
-		vi->i_mtime = timestamp_truncate(attr->ia_mtime,
-					       vi);
-	}
-	if (ia_valid & ATTR_CTIME) {
-		vi->i_ctime = timestamp_truncate(attr->ia_ctime,
-					       vi);
-	}
+	if (ia_valid & ATTR_ATIME)
+		vi->i_atime = attr->ia_atime;
+	if (ia_valid & ATTR_MTIME)
+		vi->i_mtime = attr->ia_mtime;
+	if (ia_valid & ATTR_CTIME)
+		vi->i_ctime = attr->ia_ctime;
 	mark_inode_dirty(vi);
 out:
 	return err;
